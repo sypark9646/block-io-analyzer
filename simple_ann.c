@@ -1,8 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-
-#include <time.h>
-#include <string.h>
 
 /******************************************************************
  * Network Configuration - customized per network
@@ -122,7 +118,7 @@ const float Target[PatternCount][OutputNodes] = {
 /******************************************************************
  * End Network Configuration
  ******************************************************************/
-
+static unsigned int g_seed;
 int i, j, p, q, r;
 int ReportEvery1000;
 int RandomizedIndex[PatternCount];
@@ -140,6 +136,19 @@ float HiddenDelta[HiddenNodes + 1];
 float OutputDelta[OutputNodes];
 float ChangeHiddenWeights[InputNodes + 1][HiddenNodes];
 float ChangeOutputWeights[HiddenNodes + 1][OutputNodes];
+
+inline void srand(int seed)
+{
+  g_seed = seed;
+}
+
+// Compute a pseudorandom integer.
+// Output value in range [0, 32767]
+inline int rand(void)
+{
+  g_seed = (214013 * g_seed + 2531011);
+  return (g_seed >> 16) & 0x7FFF;
+}
 
 double fabs(double x)
 {
@@ -167,6 +176,32 @@ double exp(double x)
     factorial *= n;
   } while (fabs(term) >= epsilon);
   return sum;
+}
+
+float atof(const char *s)
+{
+  float rez = 0, fact = 1;
+  if (*s == '-')
+  {
+    s++;
+    fact = -1;
+  };
+  for (int point_seen = 0; *s; s++)
+  {
+    if (*s == '.')
+    {
+      point_seen = 1;
+      continue;
+    };
+    int d = *s - '0';
+    if (d >= 0 && d <= 9)
+    {
+      if (point_seen)
+        fact /= 10.0f;
+      rez = rez * 10.0f + (float)d;
+    };
+  };
+  return rez * fact;
 }
 
 void toTerminal()
@@ -338,7 +373,7 @@ void prediction()
 void setup()
 {
   Hidden[HiddenNodes] = 1; // hidden bias node
-  srand(time(NULL));
+  srand(100);
   ReportEvery1000 = 1;
   for (p = 0; p < PatternCount; p++)
   {
